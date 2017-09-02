@@ -23,7 +23,7 @@ defmodule WebSockex.Conn do
             cacerts: nil,
             insecure: true,
             proxy_host: nil,
-            proxy_port: 0
+            proxy_port: 3128
 
   @type socket :: :gen_tcp.socket | :ssl.sslsocket
   @type header :: {field :: String.t, value :: String.t}
@@ -46,6 +46,8 @@ defmodule WebSockex.Conn do
     default #{@socket_connect_timeout_default} ms.
   - `:socket_recv_timeout` - Timeout in ms for receiving a HTTP response header
     from socket, default #{@socket_recv_timeout_default} ms.
+  - `:proxy_host` - Hostname (or IP) of the http proxy.
+  - `:proxy_port` - Port to use for http proxy, default 3128.
 
   [public_key]: http://erlang.org/doc/apps/public_key/using_public_key.html
   """
@@ -95,6 +97,7 @@ defmodule WebSockex.Conn do
   Sends data using the `conn_mod` module.
   """
   @spec socket_send(__MODULE__.t, binary) :: :ok | {:error, reason :: term}
+  def socket_send(_conn, nil), do: :ok
   def socket_send(conn, message) do
     case conn.conn_mod.send(conn.socket, message) do
       :ok -> :ok
@@ -177,6 +180,11 @@ defmodule WebSockex.Conn do
     {:ok, request <> "\r\n\r\n"}
   end
 
+  @doc """
+  Builds the request to be sent to a proxy server on the newly opened socket
+  """
+  @spec build_proxy_request(__MODULE__.t) :: {:ok, String.t}
+  def build_proxy_request(%{proxy_host: nil}), do: {:ok, nil}
   def build_proxy_request(conn) do
     headers = [{"Host", conn.host},
                {"Proxy-Connection", "keep-alive"}]
@@ -208,9 +216,18 @@ defmodule WebSockex.Conn do
          end
   end
 
+  @doc """
+  Waits for the proxy request response, decodes the packet, and returns the
+  response headers.
+
+  Sends any access information in the buffer back to the process as a message
+  to be processed.
+  """
   @spec handle_proxy_response(__MODULE__.t) ::
     {:ok, [header]} | {:error, reason :: term}
+  def handle_proxy_response(%{proxy_host: nil}), do: {:ok, []}
   def handle_proxy_response(conn) do
+    {:ok, []}
     with {:ok, buffer} <- wait_for_response(conn),
          {:ok, headers, buffer} <- decode_proxy_response(buffer) do
            # Send excess buffer back to the process
