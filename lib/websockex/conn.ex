@@ -105,14 +105,17 @@ defmodule WebSockex.Conn do
     end
   end
 
+  defp socket_target(%{proxy_host: nil} = conn), do: {conn.host, conn.port}
+  defp socket_target(conn), do: {conn.proxy_host, conn.proxy_port}
+
   @doc """
   Opens a socket to a uri and returns a conn struct.
   """
   @spec open_socket(__MODULE__.t) :: {:ok, __MODULE__.t} | {:error, term}
-  def open_socket(conn)
-  def open_socket(%{conn_mod: :gen_tcp, proxy_host: nil} = conn) do
-    case :gen_tcp.connect(String.to_charlist(conn.host),
-                          conn.port,
+  def open_socket(%{conn_mod: :gen_tcp} = conn) do
+    {host, port} = socket_target(conn)
+    case :gen_tcp.connect(String.to_charlist(host),
+                          port,
                           [:binary, active: false, packet: 0],
                           conn.socket_connect_timeout) do
       {:ok, socket} ->
@@ -126,17 +129,6 @@ defmodule WebSockex.Conn do
                       conn.port,
                       ssl_connection_options(conn),
                       conn.socket_connect_timeout) do
-      {:ok, socket} ->
-        {:ok, Map.put(conn, :socket, socket)}
-      {:error, error} ->
-        {:error, %WebSockex.ConnError{original: error}}
-    end
-  end
-  def open_socket(%{conn_mod: :gen_tcp} = conn) do
-    case :gen_tcp.connect(String.to_charlist(conn.proxy_host),
-                          conn.proxy_port,
-                          [:binary, active: false, packet: 0],
-                          conn.socket_connect_timeout) do
       {:ok, socket} ->
         {:ok, Map.put(conn, :socket, socket)}
       {:error, error} ->
