@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/Azolo/websockex.svg?branch=master)](https://travis-ci.org/Azolo/websockex)
 [![Build status](https://ci.appveyor.com/api/projects/status/jtat5j0vkh6o2ypy?svg=true)](https://ci.appveyor.com/project/Azolo/websockex)
 
-An Elixir Websocket Client.
+An Elixir Websocket Client with some basic http proxy support.
 
 A simple implemenation would be
 
