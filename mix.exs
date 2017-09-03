@@ -20,14 +20,21 @@ defmodule WebSockex.Mixfile do
   defp elixirc_paths(_), do: ['lib']
 
   def application do
-    [applications: [:logger, :ssl, :crypto],
+    [applications: applications(Mix.env),
      mod: {WebSockex.Application, []}]
+  end
+
+  def applications(:dev), do: applications(:all) ++ [:remix]
+  def applications(_all) do
+    [:logger, :ssl, :crypto]
   end
 
   defp deps do
     [{:ex_doc, "~> 0.14", only: :dev, runtime: false},
      {:cowboy, "~> 1.0.0", only: :test},
-     {:plug, "~> 1.0", only: :test}]
+     {:plug, "~> 1.0", only: :test},
+     {:remix, "~> 0.0.1", only: :dev}
+   ]
   end
 
   defp package do
